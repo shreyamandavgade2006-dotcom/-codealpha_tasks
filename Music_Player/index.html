@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wavely · Music Player</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Animated background orbs -->
+  <div class="bg-orbs">
+    <div class="orb orb-1" id="orb1"></div>
+    <div class="orb orb-2" id="orb2"></div>
+    <div class="orb orb-3" id="orb3"></div>
+  </div>
+
+  <!-- Hidden audio element. crossOrigin REQUIRED for Web Audio API to read remote streams. -->
+  <audio id="audio" crossorigin="anonymous" preload="metadata"></audio>
+
+  <div class="app">
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M2 12c2 0 2-6 4-6s2 12 4 12 2-9 4-9 2 6 4 6 2-3 4-3"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Wavely</h1>
+          <span class="brand-sub">Music · Reimagined</span>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="searchInput" type="text" placeholder="Search tracks, artists, albums…" autocomplete="off" />
+        <button id="clearSearch" class="clear-btn" aria-label="Clear">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6l-6 12"/></svg>
+        </button>
+      </div>
+
+      <button id="themeToggle" class="theme-btn" aria-label="Toggle theme">
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+    </header>
+
+    <main class="grid">
+      <!-- LEFT: Now playing / vinyl -->
+      <section class="card now-playing">
+        <div class="vinyl-stage">
+          <div class="vinyl" id="vinyl">
+            <div class="vinyl-disc">
+              <div class="vinyl-ring r1"></div>
+              <div class="vinyl-ring r2"></div>
+              <div class="vinyl-ring r3"></div>
+              <div class="vinyl-label" id="vinylLabel">
+                <img id="vinylArt" alt="cover" />
+              </div>
+            </div>
+            <div class="needle" id="needle">
+              <div class="needle-arm"></div>
+              <div class="needle-head"></div>
+              <div class="needle-base"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="track-meta">
+          <div class="track-title" id="trackTitle">—</div>
+          <div class="track-artist" id="trackArtist">—</div>
+        </div>
+
+        <!-- Visualizer -->
+        <div class="visualizer" id="visualizer" aria-hidden="true"></div>
+
+        <!-- Progress -->
+        <div class="progress-row">
+          <span id="curTime" class="time">0:00</span>
+          <div class="progress" id="progress">
+            <div class="progress-buf" id="progressBuf"></div>
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-knob" id="progressKnob"></div>
+          </div>
+          <span id="durTime" class="time">0:00</span>
+        </div>
+
+        <!-- Status pill (loading/buffering/errors) -->
+        <div id="statusPill" class="status-pill" data-kind="info"></div>
+
+        <!-- Controls -->
+        <div class="controls">
+          <button id="shuffleBtn" class="ctrl ctrl-sm" aria-label="Shuffle" title="Shuffle">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20l17-17"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+          </button>
+          <button id="prevBtn" class="ctrl" aria-label="Previous">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l9-6v12z"/></svg>
+          </button>
+          <button id="playBtn" class="ctrl ctrl-play" aria-label="Play / Pause">
+            <span class="play-pulse"></span>
+            <svg class="icon-play" viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M7 5l13 7-13 7z"/></svg>
+            <svg class="icon-pause" viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+          <button id="nextBtn" class="ctrl" aria-label="Next">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M16 6h2v12h-2zM5.5 6l9 6-9 6z"/></svg>
+          </button>
+          <button id="repeatBtn" class="ctrl ctrl-sm" aria-label="Repeat" title="Repeat">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+          </button>
+        </div>
+
+        <!-- Volume -->
+        <div class="volume-row">
+          <button id="volIconBtn" class="vol-icon" aria-label="Mute">
+            <svg id="volIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path id="volWave1" d="M15.5 8.5a5 5 0 0 1 0 7"/><path id="volWave2" d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+          </button>
+          <input id="volume" type="range" min="0" max="100" value="75" />
+          <span id="volLabel" class="vol-label">75%</span>
+        </div>
+
+        <!-- Feature tabs (EQ / Lyrics) -->
+        <div class="feature-tabs">
+          <button class="tab-btn active" data-tab="lyrics">Lyrics</button>
+          <button class="tab-btn" data-tab="eq">Equalizer</button>
+        </div>
+
+        <!-- Lyrics panel -->
+        <div class="panel panel-lyrics active" id="panelLyrics">
+          <div class="lyrics-scroll" id="lyricsScroll">
+            <div class="lyrics-inner" id="lyricsInner"></div>
+          </div>
+        </div>
+
+        <!-- Equalizer panel -->
+        <div class="panel panel-eq" id="panelEq">
+          <div class="eq-presets" id="eqPresets">
+            <button class="preset active" data-preset="flat">Flat</button>
+            <button class="preset" data-preset="bass">Bass Boost</button>
+            <button class="preset" data-preset="vocal">Vocal</button>
+            <button class="preset" data-preset="rock">Rock</button>
+            <button class="preset" data-preset="electronic">Electronic</button>
+            <button class="preset" data-preset="acoustic">Acoustic</button>
+          </div>
+          <div class="eq-sliders" id="eqSliders">
+            <div class="eq-slider">
+              <input type="range" min="-12" max="12" value="0" data-band="bass" orient="vertical" />
+              <span class="eq-val" data-val="bass">0 dB</span>
+              <span class="eq-lbl">Bass<br><em>60 Hz</em></span>
+            </div>
+            <div class="eq-slider">
+              <input type="range" min="-12" max="12" value="0" data-band="lowmid" orient="vertical" />
+              <span class="eq-val" data-val="lowmid">0 dB</span>
+              <span class="eq-lbl">Low-Mid<br><em>250 Hz</em></span>
+            </div>
+            <div class="eq-slider">
+              <input type="range" min="-12" max="12" value="0" data-band="mid" orient="vertical" />
+              <span class="eq-val" data-val="mid">0 dB</span>
+              <span class="eq-lbl">Mid<br><em>1 kHz</em></span>
+            </div>
+            <div class="eq-slider">
+              <input type="range" min="-12" max="12" value="0" data-band="highmid" orient="vertical" />
+              <span class="eq-val" data-val="highmid">0 dB</span>
+              <span class="eq-lbl">High-Mid<br><em>4 kHz</em></span>
+            </div>
+            <div class="eq-slider">
+              <input type="range" min="-12" max="12" value="0" data-band="treble" orient="vertical" />
+              <span class="eq-val" data-val="treble">0 dB</span>
+              <span class="eq-lbl">Treble<br><em>12 kHz</em></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Playlist -->
+      <section class="card playlist-card">
+        <div class="playlist-head">
+          <div>
+            <h2>Your Playlist</h2>
+            <span class="sub" id="playlistSub">6 tracks · curated for you</span>
+          </div>
+          <div class="head-actions">
+            <span class="badge" id="filterBadge" hidden></span>
+          </div>
+        </div>
+
+        <ul class="playlist" id="playlist"></ul>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <p>No tracks match your search.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <span>Wavely · crafted with ♪</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
